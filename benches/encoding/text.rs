@@ -35,7 +35,7 @@ pub fn text(c: &mut Criterion) {
         }
 
         impl prometheus_client::encoding::text::Encode for Status {
-            fn encode(&self, writer: &mut dyn Write) -> Result<(), std::io::Error> {
+            fn encode(&self, writer: &mut dyn Write) -> Result<(), std::fmt::Error> {
                 let status = match self {
                     Status::Two => b"200",
                     Status::Four => b"400",
@@ -47,14 +47,14 @@ pub fn text(c: &mut Criterion) {
         }
 
         #[cfg(feature = "protobuf")]
-        impl prometheus_client::encoding::proto::EncodeLabels for Status {
-            fn encode(&self, labels: &mut Vec<prometheus_client::encoding::proto::Label>) {
+        impl prometheus_client::encoding::protobuf::EncodeLabels for Status {
+            fn encode(&self, labels: &mut Vec<prometheus_client::encoding::protobuf::Label>) {
                 let value = match self {
                     Status::Two => "200".to_string(),
                     Status::Four => "400".to_string(),
                     Status::Five => "500".to_string(),
                 };
-                labels.push(prometheus_client::encoding::proto::Label {
+                labels.push(prometheus_client::encoding::protobuf::Label {
                     name: "status".to_string(),
                     value,
                 });

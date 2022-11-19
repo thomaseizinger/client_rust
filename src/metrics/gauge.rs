@@ -2,6 +2,8 @@
 //!
 //! See [`Gauge`] for details.
 
+use crate::encoding::{EncodeGaugeValue, EncodeMetric, MetricEncoder};
+
 use super::{MetricType, TypedMetric};
 use std::marker::PhantomData;
 #[cfg(not(any(target_arch = "mips", target_arch = "powerpc")))]
@@ -25,8 +27,8 @@ use std::sync::Arc;
 /// ```
 /// # use prometheus_client::metrics::gauge::Gauge;
 /// let gauge: Gauge = Gauge::default();
-/// gauge.set(42u64);
-/// let _value: u64 = gauge.get();
+/// gauge.set(42);
+/// let _value = gauge.get();
 /// ```
 ///
 /// ## Using [`AtomicU64`] as storage and [`f64`] on the interface
@@ -40,7 +42,7 @@ use std::sync::Arc;
 /// ```
 #[cfg(not(any(target_arch = "mips", target_arch = "powerpc")))]
 #[derive(Debug)]
-pub struct Gauge<N = u64, A = AtomicU64> {
+pub struct Gauge<N = i64, A = AtomicI64> {
     value: Arc<A>,
     phantom: PhantomData<N>,
 }
@@ -48,7 +50,7 @@ pub struct Gauge<N = u64, A = AtomicU64> {
 /// Open Metrics [`Gauge`] to record current measurements.
 #[cfg(any(target_arch = "mips", target_arch = "powerpc"))]
 #[derive(Debug)]
-pub struct Gauge<N = u32, A = AtomicU32> {
+pub struct Gauge<N = i32, A = AtomicI32> {
     value: Arc<A>,
     phantom: PhantomData<N>,
 }
@@ -263,6 +265,19 @@ impl Atomic<i64> for AtomicI64 {
 
 impl<N, A> TypedMetric for Gauge<N, A> {
     const TYPE: MetricType = MetricType::Gauge;
+}
+
+impl<N, A> EncodeMetric for Gauge<N, A>
+where
+    N: EncodeGaugeValue,
+    A: Atomic<N>,
+{
+    fn encode(&self, mut encoder: MetricEncoder) -> Result<(), std::fmt::Error> {
+        encoder.encode_gauge(self.get())
+    }
+    fn metric_type(&self) -> MetricType {
+        Self::TYPE
+    }
 }
 
 #[cfg(test)]

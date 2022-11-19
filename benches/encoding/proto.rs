@@ -2,7 +2,7 @@
 // https://github.com/tikv/rust-prometheus/blob/ab1ca7285d3463504381a5025ae1951e020d6796/benches/text_encoder.rs:write
 
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use prometheus_client::encoding::proto::{encode, EncodeMetric};
+use prometheus_client::encoding::protobuf::{encode, EncodeMetric};
 use prometheus_client::encoding::Encode;
 use prometheus_client::metrics::counter::Counter;
 use prometheus_client::metrics::family::Family;
