@@ -8,6 +8,7 @@ use super::{MetricType, TypedMetric};
 use parking_lot::{MappedRwLockReadGuard, RwLock, RwLockReadGuard, RwLockWriteGuard};
 use std::cell::RefCell;
 use std::collections::HashMap;
+use std::ops::DerefMut;
 use std::sync::Arc;
 
 /// Representation of the OpenMetrics *MetricFamily* data type.
@@ -330,23 +331,20 @@ where
 /// As a [`Family`], but constant, meaning it cannot change once created.
 ///
 /// Needed for advanced use-cases, e.g. in combination with [`Collector`](crate::collector::Collector).
-#[derive(Debug, Default)]
-pub struct ConstFamily<I>(RefCell<I>);
+pub struct ConstFamily<'a, S, M>(RefCell<&'a mut dyn Iterator<Item = (S, M)>>);
 
-impl<I> ConstFamily<I> {
+impl<'a, S, M> ConstFamily<'a, S, M> {
     /// Creates a new [`ConstFamily`].
-    pub fn new(iter: I) -> Self {
+    pub fn new<I: Iterator<Item = (S, M)> + Sized>(iter: &'a mut I) -> Self {
         Self(RefCell::new(iter))
     }
 }
 
-impl<S: EncodeLabelSet, M: EncodeMetric + TypedMetric, I: Iterator<Item = (S, M)>> EncodeMetric
-    for ConstFamily<I>
-{
+impl<S: EncodeLabelSet, M: EncodeMetric + TypedMetric> EncodeMetric for ConstFamily<'_, S, M> {
     fn encode(&self, mut encoder: MetricEncoder<'_, '_>) -> Result<(), std::fmt::Error> {
         let mut iter = self.0.borrow_mut();
 
-        for (label_set, m) in iter.by_ref() {
+        for (label_set, m) in iter.deref_mut() {
             let encoder = encoder.encode_family(&label_set)?;
             m.encode(encoder)?;
         }
